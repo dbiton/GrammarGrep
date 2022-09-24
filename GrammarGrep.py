@@ -3,12 +3,16 @@ import RegExParser
 
 
 class GrammarGrep:
-    def __init__(self):
+    def __init__(self, code: str = None):
         self.code = None
         self.labels = None
+        if code is not None:
+            self.load_code(code)
 
+    'note that match is greedy - so it does not get every match, but instead the longest one from each initial position'
     def match(self, regex):
         nfa = RegExParser.regex_to_nfa(regex)
+        'nfa.display_graph()'
         return nfa.match_all(self.code, self.labels)
 
     def replace(self, regex, replace_list):
@@ -46,8 +50,7 @@ class GrammarGrep:
                     labels.setdefault(key, [])
                     labels[key].append(value)
                 ast.NodeVisitor.generic_visit(self, node)
-
-        self.code = code.splitlines()
         parsed_code = ast.parse(code)
+        self.code = code.splitlines()
         LabelVisitor().visit(parsed_code)
         self.labels = labels

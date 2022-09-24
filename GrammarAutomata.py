@@ -2,6 +2,8 @@
 
 import os
 
+import graphviz
+
 os.environ["PATH"] += os.pathsep + 'C:/Program Files/Graphviz/bin'
 
 
@@ -145,7 +147,7 @@ class GrammarAutomata:
                 print("EDGE TO", hex(id(edge[0])), "WITH COND TYPE:", edge[1].type, "STR:", edge[1].str)
 
     def display_graph(self):
-        '''dot = graphviz.Digraph(comment='Automata')
+        dot = graphviz.Digraph(comment='Automata')
         for i, node in enumerate(self.nodes):
             dot.node(hex(id(node)), str(i))
             for edge in node.edges:
@@ -153,7 +155,7 @@ class GrammarAutomata:
                     dot.edge(hex(id(node)), hex(id(edge[0])), edge[1].type + ":'" + edge[1].str + "'")
                 else:
                     dot.edge(hex(id(node)), hex(id(edge[0])), edge[1].type)
-        dot.render('doctest-output/automata.gv', view=True)'''
+        dot.render('doctest-output/automata.gv', view=True)
         pass
 
     def consolidate_groups(self, groups):
@@ -205,10 +207,10 @@ class GrammarAutomata:
                 last = curr
         return last
 
-    def match_all(self, codelines, labels):
+    def match_all(self, codelines: list, labels):
         return [m for (m, _) in self.match_generator(codelines, labels)]
 
-    def match_first(self, codelines, labels):
+    def match_first(self, codelines: list, labels):
         return next(self.match_generator(codelines, labels))[0]
 
     def get_key(self, val, d):

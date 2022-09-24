@@ -78,18 +78,12 @@ def regex_to_nfa_aux(regex: str, groups, i_begin, i_end):
             nfa = GrammarAutomata.create_automata_or(nfa_l, nfa_r)
             return nfa
         elif regex[meta_idx + 1] == "*":
-            nfa_inner = regex_to_nfa_aux(regex, groups, i_curr, meta_idx)
-            nfa = GrammarAutomata.create_automata_concat(nfa, nfa_inner)
             nfa = GrammarAutomata.create_automata_star(nfa)
             i_curr = meta_idx + 2
         elif regex[meta_idx + 1] == "+":
-            nfa_inner = regex_to_nfa_aux(regex, groups, i_curr, meta_idx)
-            nfa = GrammarAutomata.create_automata_concat(nfa, nfa_inner)
             nfa = GrammarAutomata.create_automata_plus(nfa)
             i_curr = meta_idx + 2
         elif regex[meta_idx + 1] == "?":
-            nfa_inner = regex_to_nfa_aux(regex, groups, i_curr, meta_idx)
-            nfa = GrammarAutomata.create_automata_concat(nfa, nfa_inner)
             nfa = GrammarAutomata.create_automata_question(nfa)
             i_curr = meta_idx + 2
         elif regex[meta_idx + 1:].startswith("id"):
