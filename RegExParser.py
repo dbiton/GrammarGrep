@@ -34,21 +34,18 @@ def get_closing_paren(regex: str, paren_open_idx):
         elif regex[i + 1] == ")":
             counter -= 1
         if counter == 0:
-            return i
+            return i + 2
         i = regex.find(";", i + 1)
-
+        if i == -1:
+            raise RuntimeError("Regular expression's parentheses are unbalanced")
 
 def get_groups(regex: str):
     groups = {}
     i_begin = regex.find(";(", 0)
-    i_end = len(regex)
-    i_group = 0
-    while i_begin != -1 and i_begin < i_end:
+    while i_begin != -1:
         i_end = get_closing_paren(regex, i_begin+1)
-        groups[i_begin] = (i_end, i_group)
-        i_begin += 2
-        i_group += 1
-        i_begin = regex.find(";(", i_begin)
+        groups[i_begin] = (i_end, len(groups))
+        i_begin = regex.find(";(", i_begin + 2)
     return groups
 
 
@@ -68,9 +65,9 @@ def regex_to_nfa_aux(regex: str, groups, i_begin, i_end):
 
         if regex[meta_idx + 1] == "(":
             idx_close, idx_group = groups[meta_idx]
-            nfa_step = regex_to_nfa_aux(regex, groups, meta_idx + 2, idx_close)
+            nfa_step = regex_to_nfa_aux(regex, groups, meta_idx + 2, idx_close - 2)
             nfa_step.add_group(idx_group)
-            i_curr = idx_close + 2
+            i_curr = idx_close
             nfa = GrammarAutomata.create_automata_concat(nfa, nfa_step)
         elif regex[meta_idx + 1] == "|":
             nfa_l = nfa
@@ -107,8 +104,7 @@ def regex_to_nfa_aux(regex: str, groups, i_begin, i_end):
             nfa = GrammarAutomata.create_automata_concat(nfa, nfa_step)
             i_curr = meta_idx + 1 + 3
         else:
-            print("Error!")
-            return None
+            raise RuntimeError("Could not compile regular expression")
     return nfa
 
 

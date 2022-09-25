@@ -10,13 +10,19 @@ code_simple_function = \
 
 code_simple_statement = "x = y + 5 * 3"
 
-code_number = "21211"
+code_number = "212112"
 
 code_asserts = \
-    "def f(x, y):\n" \
-    "   z = x + y\n" \
-    "   s = 's'\n" \
-    "   return z*z"
+    "def f():\n" \
+    "   assert(11 == len('s'))\n" \
+    "   assertEqual(21, 21)\n" \
+    "   name = 'dvir'\n" \
+    "   assert(2 == len(name))\n" \
+    "   assert(22 == len(name))\n" \
+    "   assertEqual(2111, name)\n" \
+    "   assertEqual(2, 2)"
+
+# note: match does not return all matches, but instead the longest ones starting at each initial position
 
 class TestGrammerGrep(unittest.TestCase):
 
@@ -63,17 +69,45 @@ class TestGrammerGrep(unittest.TestCase):
 
     def test_match_meta_star(self):
         grep = GrammarGrep(code_number)
-        self.assertEqual(grep.match("2;(1;*;)"), [((0, 0), (0, 1)), ((0, 0), (0, 2)),
-                                                  ((0, 2), (0, 3)), ((0, 2), (0, 5))])
+        self.assertEqual(grep.match("2;(1;*;)"), [((0, 0), (0, 2)),
+                                                  ((0, 2), (0, 5)),
+                                                  ((0, 5), (0, 6))])
 
     def test_match_meta_question(self):
         grep = GrammarGrep(code_number)
-        self.assertEqual(grep.match("2;(1;?;)"), [((0, 0), (0, 1)), ((0, 0), (0, 2)),
-                                                  ((0, 2), (0, 3))])
+        self.assertEqual(grep.match("2;(1;?;)"), [((0, 0), (0, 2)),
+                                                  ((0, 2), (0, 4)),
+                                                  ((0, 5), (0, 6))])
+
+    def test_unbalanced_parentheses(self):
+        grep = GrammarGrep(code_asserts)
+        self.assertRaises(RuntimeError, grep.match, ";(;(;x))")
 
     def test_match_comprehensive_regex(self):
         grep = GrammarGrep(code_asserts)
-        self.assertEqual(grep.match("assert(;(2;?1;*;) == len(;str));|assertEqual(2;(1;+;), ;(;id;|num;))"), [])
+        self.assertEqual(grep.match("assert(;(2;?1;*;) == len(;str));|assertEqual(2;(1;+;), ;(;id;|;num;))"), [
+            ((1, 3), (1, 25)),
+            ((2, 3), (2, 22)),
+            ((4, 3), (4, 22)),
+            ((6, 3), (6, 26))
+        ])
+
+    def test_match_single_plaintext_char_in_group(self):
+        grep = GrammarGrep(code_simple_statement)
+        self.assertEqual(grep.match(";(+;)"), [((0, 6), (0, 7))])
+
+    def test_replace_single_plaintext_char(self):
+        grep = GrammarGrep(code_simple_statement)
+        self.assertEqual(grep.replace(";(+;)", ['-']), ["x = y - 5 * 3"])
+
+    def test_replace_multiple_in_single_line(self):
+        grep = GrammarGrep(code_simple_statement)
+        self.assertEqual(grep.replace(";(;id;) ;(+;) ;num * ;(;num;)", ['x', '-', 'z']), ["x = x - 5 * z"])
+
+    def test_replace_multiple_in_multiple_lines(self):
+        grep = GrammarGrep(code_simple_statement)
+        self.assertEqual(grep.replace(";(;id;) ;(+;) ;num * ;(;num;)", ['x', '-', 'z']), ["x = x - 5 * z"])
+
 
 if __name__ == '__main__':
     unittest.main()
