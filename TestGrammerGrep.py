@@ -22,6 +22,7 @@ code_asserts = \
     "   assertEqual(2111, name)\n" \
     "   assertEqual(2, 2)"
 
+
 # note: match does not return all matches, but instead the longest ones starting at each initial position
 
 class TestGrammerGrep(unittest.TestCase):
@@ -105,8 +106,17 @@ class TestGrammerGrep(unittest.TestCase):
         self.assertEqual(grep.replace(";(;id;) ;(+;) ;num * ;(;num;)", ['x', '-', 'z']), ["x = x - 5 * z"])
 
     def test_replace_multiple_in_multiple_lines(self):
-        grep = GrammarGrep(code_simple_statement)
-        self.assertEqual(grep.replace(";(;id;) ;(+;) ;num * ;(;num;)", ['x', '-', 'z']), ["x = x - 5 * z"])
+        grep = GrammarGrep(code_asserts)
+        self.assertEqual(grep.replace("assert(;(;num;) == len(;(;str;|;id;))", ['5', "'hello'"]), [
+            "def f():",
+            "   assert(5 == len('hello'))",
+            "   assertEqual(21, 21)",
+            "   name = 'dvir'",
+            "   assert(5 == len('hello'))",
+            "   assert(5 == len('hello'))",
+            "   assertEqual(2111, name)",
+            "   assertEqual(2, 2)"
+        ])
 
 
 if __name__ == '__main__':

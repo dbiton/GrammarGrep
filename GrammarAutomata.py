@@ -91,9 +91,9 @@ class GrammarAutomata:
         ga = GrammarAutomata()
         ga.nodes = [GrammarAutomata.Node()] + ga0.nodes + ga1.nodes + [GrammarAutomata.Node()]
         ga.add_edge(0, 1, GrammarAutomata.Cond("epsilon"))
-        ga.add_edge(0, 1+len(ga0.nodes), GrammarAutomata.Cond("epsilon"))
+        ga.add_edge(0, 1 + len(ga0.nodes), GrammarAutomata.Cond("epsilon"))
         ga.add_edge(len(ga0.nodes), len(ga.nodes) - 1, GrammarAutomata.Cond("epsilon"))
-        ga.add_edge(len(ga.nodes)-2, len(ga.nodes) - 1, GrammarAutomata.Cond("epsilon"))
+        ga.add_edge(len(ga.nodes) - 2, len(ga.nodes) - 1, GrammarAutomata.Cond("epsilon"))
         ga.groups = ga0.groups + ga1.groups
         return ga
 
@@ -109,8 +109,8 @@ class GrammarAutomata:
         ga = GrammarAutomata()
         ga.nodes = [GrammarAutomata.Node()] + ga0.nodes + [GrammarAutomata.Node()]
         ga.add_edge(0, 1, GrammarAutomata.Cond("epsilon"))
-        ga.add_edge(len(ga.nodes)-2, 1, GrammarAutomata.Cond("epsilon"))
-        ga.add_edge(len(ga.nodes)-2, len(ga.nodes)-1, GrammarAutomata.Cond("epsilon"))
+        ga.add_edge(len(ga.nodes) - 2, 1, GrammarAutomata.Cond("epsilon"))
+        ga.add_edge(len(ga.nodes) - 2, len(ga.nodes) - 1, GrammarAutomata.Cond("epsilon"))
         ga.groups = ga0.groups
         return ga
 
@@ -119,8 +119,8 @@ class GrammarAutomata:
         ga = GrammarAutomata()
         ga.nodes = [GrammarAutomata.Node()] + ga0.nodes + [GrammarAutomata.Node()]
         ga.add_edge(0, 1, GrammarAutomata.Cond("epsilon"))
-        ga.add_edge(len(ga.nodes)-2, len(ga.nodes)-1, GrammarAutomata.Cond("epsilon"))
-        ga.add_edge(1, len(ga.nodes)-1, GrammarAutomata.Cond("epsilon"))
+        ga.add_edge(len(ga.nodes) - 2, len(ga.nodes) - 1, GrammarAutomata.Cond("epsilon"))
+        ga.add_edge(1, len(ga.nodes) - 1, GrammarAutomata.Cond("epsilon"))
         ga.groups = ga0.groups
         return ga
 
@@ -158,6 +158,7 @@ class GrammarAutomata:
         dot.render('doctest-output/automata.gv', view=True)
         pass
 
+    # this has a bug with repeating groups (many instances of a group in a single match)
     def consolidate_groups(self, groups):
         index_to_range = {}
         for (lineno, col_offset), groups_begin in groups[0].items():
@@ -169,7 +170,7 @@ class GrammarAutomata:
                 if group_index in index_to_range:
                     index_to_range[group_index][1] = (lineno, col_offset)
         # remove uncompleted groups
-        index_to_range = {k: l for k, l in index_to_range.items() if l[1] is not None}
+        index_to_range = {k: [(l[0], l[1])] for k, l in index_to_range.items() if l[1] is not None}
         return index_to_range
 
     def match_generator(self, codelines, labels):
@@ -219,23 +220,71 @@ class GrammarAutomata:
                 return key
         return None
 
-    def replace_helper(self, res, substr, group_position, offset):
-        begin = offset[0] + group_position[0][0], offset[1] + group_position[0][1]
-        end = offset[0] + group_position[1][0], offset[1] + group_position[1][1]
-        res_replaced = res[:begin[0]] + [res[begin[0]][:begin[1]] + substr + res[end[0]][end[1]:]] + res[end[0]+1:]
-        offset_new = offset #offset[0], len(substr) - end[1] + begin[1] + offset[1]
-        return res_replaced, offset_new
+    @staticmethod
+    def flattened_range(range, codelines_length):
+        (range_begin_row, range_begin_col), (range_end_row, range_end_col) = range
+        sum_rows_before_begin = sum(codelines_length[: range_begin_row]) + range_begin_row
+        sum_rows_before_end = sum_rows_before_begin + sum(codelines_length[range_begin_row: range_end_row]) + \
+                              range_end_row - range_begin_row
+        return sum_rows_before_begin + range_begin_col, sum_rows_before_end + range_end_col
 
-    def replace_all(self, codelines: str, labels, replace_list):
-        res = codelines
-        offset = (0, 0)
+    @staticmethod
+    def flattened_matches(codelines, match_groups_pairs):
+        codelines_lengths = [len(codeline) for codeline in codelines]
+        match_groups_pairs_flattened = []
+        for match, groups in match_groups_pairs:
+            match_flattened = GrammarAutomata.flattened_range(match, codelines_lengths)
+            groups_flattened = {group_id: [GrammarAutomata.flattened_range(group_range, codelines_lengths)
+                                           for group_range in group_ranges]
+                                for group_id, group_ranges in groups.items()}
+            match_groups_pairs_flattened.append((match_flattened, groups_flattened))
+        return match_groups_pairs_flattened
+
+    @staticmethod
+    def replace_groups(codelines: list, match_groups_pairs, replace_list):
+        codelines_str = "\n".join(codelines)
+        match_groups_pairs_flattened = GrammarAutomata.flattened_matches(codelines, match_groups_pairs)
+        offset = 0
+        for _, groups in match_groups_pairs_flattened:
+            for group_index, group_matches in groups.items():
+                for (group_begin, group_end) in group_matches:
+                    # consider changing to a list of chars instead
+                    codelines_str = codelines_str[:offset+group_begin] + replace_list[group_index] + codelines_str[offset+group_end:]
+                    offset += len(replace_list[group_index]) - (group_end - group_begin)
+        return codelines_str.split("\n")
+
+    # Assumes match0 starts before match1
+    @staticmethod
+    def two_matches_collide(match0, match1):
+        (match0_begin_line, match0_begin_col), (match0_end_line, match0_end_col) = match0
+        (match1_begin_line, match1_begin_col), (match1_end_line, match1_end_col) = match1
+        if match1_begin_line == match0_end_line:
+            # if match0 is multilined
+            if match0_end_line < match1_begin_line:
+                return True
+            else:
+                return match1_begin_col <= match0_end_col
+        elif match1_begin_line > match0_end_line:
+            return False
+        else:
+            raise RuntimeError("match0 should begin before match1")
+
+    # Assumes match starts after all matches in match_group_pairs, and that they are sorted
+    @staticmethod
+    def any_match_collides(match, match_group_pairs):
+        for match_other, _ in match_group_pairs:
+            if GrammarAutomata.two_matches_collide(match_other, match):
+                return True
+        return False
+
+    def replace_all(self, codelines: list, labels, replace_list):
+        match_groups_pairs = []
         for match, groups in self.match_generator(codelines, labels):
-            for group_index, group_position in groups.items():
-                substr = replace_list[group_index]
-                res, offset = self.replace_helper(res, substr, group_position, offset)
-        return res
+            if not self.any_match_collides(match, match_groups_pairs):
+                match_groups_pairs.append((match, groups))
+        return self.replace_groups(codelines, match_groups_pairs, replace_list)
 
     def replace_first(self, codelines, labels, replace_list):
-        # match, groups = next(self.match_generator(codelines, labels))[0]
-        # print(match, groups)
-        return codelines
+        match, groups = next(self.match_generator(codelines, labels))[0]
+        print(match, groups)
+        return self.replace_groups(codelines, [(match, groups)])
