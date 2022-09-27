@@ -263,7 +263,7 @@ class GrammarAutomata:
             if match0_end_line < match1_begin_line:
                 return True
             else:
-                return match1_begin_col <= match0_end_col
+                return match1_begin_col < match0_end_col
         elif match1_begin_line > match0_end_line:
             return False
         else:

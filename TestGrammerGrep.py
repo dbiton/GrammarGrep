@@ -31,6 +31,10 @@ class TestGrammerGrep(unittest.TestCase):
         grep = GrammarGrep(code_simple_function)
         self.assertEqual(grep.match("s"), [((2, 3), (2, 4)), ((2, 8), (2, 9))])
 
+    def test_match_adjacent(self):
+        grep = GrammarGrep("123123123")
+        self.assertEqual(grep.match("123"), [((0, 0), (0, 3)), ((0, 3), (0, 6)), ((0, 6), (0, 9))])
+
     def test_match_plaintext_string(self):
         grep = GrammarGrep(code_simple_function)
         self.assertEqual(grep.match("z*z"), [((3, 10), (3, 13))])
@@ -89,7 +93,6 @@ class TestGrammerGrep(unittest.TestCase):
         self.assertEqual(grep.match("assert(;(2;?1;*;) == len(;str));|assertEqual(2;(1;+;), ;(;id;|;num;))"), [
             ((1, 3), (1, 25)),
             ((2, 3), (2, 22)),
-            ((4, 3), (4, 22)),
             ((6, 3), (6, 26))
         ])
 
@@ -107,6 +110,7 @@ class TestGrammerGrep(unittest.TestCase):
 
     def test_replace_multiple_in_multiple_lines(self):
         grep = GrammarGrep(code_asserts)
+
         self.assertEqual(grep.replace("assert(;(;num;) == len(;(;str;|;id;))", ['5', "'hello'"]), [
             "def f():",
             "   assert(5 == len('hello'))",
@@ -118,6 +122,17 @@ class TestGrammerGrep(unittest.TestCase):
             "   assertEqual(2, 2)"
         ])
 
+    def test_replace_adjacent_matches(self):
+        grep = GrammarGrep("123123123")
+        self.assertEqual(grep.replace(";(123;)", ['321']), ["321321321"])
+
+    def test_replace_multiple_occurrences_of_single_group_in_match(self):
+        grep = GrammarGrep("123123123")
+        self.assertEqual(grep.replace(";(123;);*", ['321']), ["321321321"])
+
+    def test_replace_longest_match(self):
+        grep = GrammarGrep("AAAAAAAAAAA")
+        self.assertEqual(grep.replace(";(A;*;)", ['B']), ["B"])
 
 if __name__ == '__main__':
     unittest.main()
