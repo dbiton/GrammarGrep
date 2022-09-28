@@ -35,6 +35,10 @@ class TestGrammerGrep(unittest.TestCase):
         grep = GrammarGrep("123123123")
         self.assertEqual(grep.match("123"), [((0, 0), (0, 3)), ((0, 3), (0, 6)), ((0, 6), (0, 9))])
 
+    def test_match_multiline_plaintext(self):
+        grep = GrammarGrep(code_simple_function)
+        self.assertEqual(grep.match("def f(x, y):\n   z ="), [((0, 0), (1, 6))])
+
     def test_match_plaintext_string(self):
         grep = GrammarGrep(code_simple_function)
         self.assertEqual(grep.match("z*z"), [((3, 10), (3, 13))])
@@ -57,8 +61,7 @@ class TestGrammerGrep(unittest.TestCase):
 
     def test_match_expr(self):
         grep = GrammarGrep(code_simple_statement)
-        self.assertEqual(grep.match(";expr"), [((0, 0), (0, 1)), ((0, 4), (0, 13)),
-                                               ((0, 8), (0, 13)), ((0, 12), (0, 13))])
+        self.assertEqual(grep.match(";expr"), [((0, 0), (0, 1)), ((0, 4), (0, 13))])
 
     def test_match_stmt(self):
         grep = GrammarGrep(code_simple_statement)

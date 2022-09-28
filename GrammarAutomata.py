@@ -198,7 +198,12 @@ class GrammarAutomata:
                             stack.append((node_dst, ends[0], ends[1]))
             if last_match_end is not None:
                 yield ((lineno_begin, col_offset_begin), last_match_end), self.consolidate_groups(group_markers)
-            lineno_begin, col_offset_begin = self.get_next_begin(codelines, lineno_begin, col_offset_begin)
+                # avoid collisions
+                lineno_begin, col_offset_begin = last_match_end
+                if lineno_begin == len(codelines) - 1 and col_offset_begin == len(codelines[lineno_begin]):
+                    lineno_begin, col_offset_begin = -1, -1
+            else:
+                lineno_begin, col_offset_begin = self.get_next_begin(codelines, lineno_begin, col_offset_begin)
 
     def last_listend(self, listends):
         last = listends[0]
@@ -249,7 +254,8 @@ class GrammarAutomata:
             for group_index, group_matches in groups.items():
                 for (group_begin, group_end) in group_matches:
                     # consider changing to a list of chars instead
-                    codelines_str = codelines_str[:offset+group_begin] + replace_list[group_index] + codelines_str[offset+group_end:]
+                    codelines_str = codelines_str[:offset + group_begin] + replace_list[group_index] + codelines_str[
+                                                                                                       offset + group_end:]
                     offset += len(replace_list[group_index]) - (group_end - group_begin)
         return codelines_str.split("\n")
 
@@ -278,13 +284,9 @@ class GrammarAutomata:
         return False
 
     def replace_all(self, codelines: list, labels, replace_list):
-        match_groups_pairs = []
-        for match, groups in self.match_generator(codelines, labels):
-            if not self.any_match_collides(match, match_groups_pairs):
-                match_groups_pairs.append((match, groups))
+        match_groups_pairs = [(m, g) for (m, g) in self.match_generator(codelines, labels)]
         return self.replace_groups(codelines, match_groups_pairs, replace_list)
 
     def replace_first(self, codelines, labels, replace_list):
         match, groups = next(self.match_generator(codelines, labels))[0]
-        print(match, groups)
-        return self.replace_groups(codelines, [(match, groups)])
+        return self.replace_groups(codelines, [(match, groups)], replace_list)
