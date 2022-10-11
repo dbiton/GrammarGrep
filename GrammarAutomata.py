@@ -2,7 +2,7 @@
 
 import os
 
-import graphviz
+#import graphviz
 
 os.environ["PATH"] += os.pathsep + 'C:/Program Files/Graphviz/bin'
 
@@ -146,17 +146,17 @@ class GrammarAutomata:
             for edge in node.edges:
                 print("EDGE TO", hex(id(edge[0])), "WITH COND TYPE:", edge[1].type, "STR:", edge[1].str)
 
-    def display_graph(self):
-        dot = graphviz.Digraph(comment='Automata')
-        for i, node in enumerate(self.nodes):
-            dot.node(hex(id(node)), str(i))
-            for edge in node.edges:
-                if edge[1].type == "str":
-                    dot.edge(hex(id(node)), hex(id(edge[0])), edge[1].type + ":'" + edge[1].str + "'")
-                else:
-                    dot.edge(hex(id(node)), hex(id(edge[0])), edge[1].type)
-        dot.render('doctest-output/automata.gv', view=True)
-        pass
+    # def display_graph(self):
+    #     dot = graphviz.Digraph(comment='Automata')
+    #     for i, node in enumerate(self.nodes):
+    #         dot.node(hex(id(node)), str(i))
+    #         for edge in node.edges:
+    #             if edge[1].type == "str":
+    #                 dot.edge(hex(id(node)), hex(id(edge[0])), edge[1].type + ":'" + edge[1].str + "'")
+    #             else:
+    #                 dot.edge(hex(id(node)), hex(id(edge[0])), edge[1].type)
+    #     dot.render('doctest-output/automata.gv', view=True)
+    #     pass
 
     # this has a bug with repeating groups (many instances of a group in a single match)
     def consolidate_groups(self, groups):
@@ -290,3 +290,5 @@ class GrammarAutomata:
     def replace_first(self, codelines, labels, replace_list):
         match, groups = next(self.match_generator(codelines, labels))[0]
         return self.replace_groups(codelines, [(match, groups)], replace_list)
+
+
