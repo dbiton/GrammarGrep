@@ -24,8 +24,8 @@ def timereps(reps, func):
 
 
 if __name__ == '__main__':
-    regexes_python = ["test", "str|int|arg(1*)"]
-    regexes_grep = ["test", "str;|int;|arg;(1*;)"]
+    regexes_python = ["test", "str|int|arg(1*)", ";num ;(+;|-;|*;|/;) ;num", "def ;id(;id):"]
+    regexes_grep = ["test", "str;|int;|arg;(1*;)", "[0-9]* +|-|*|/ [0-9]*", "def [a-zA-Z0-9]*\([[a-zA-Z0-9]*\):"]
     for regex_python, regex_grep in zip(regexes_python, regexes_grep):
         for benchmark_name in os.listdir("benchmarks"):
             with open(os.path.join("benchmarks", benchmark_name)) as f:
