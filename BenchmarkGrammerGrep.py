@@ -33,9 +33,9 @@ def timereps(reps, func):
 
 
 if __name__ == '__main__':
-    itercount = 2
-    regexes_context = ["test", "str|int|arg(1*)", "[-]?[0-9]+", "def [a-zA-Z0-9]*\([[a-zA-Z0-9]*\):"]
-    regexes_regular = ["test", "str;|int;|arg;(1*;)", ";num", "def ;id(;id):"]
+    itercount = 16
+    regexes_regular = ["test", "str|int|arg(1*)", "[-]?[0-9]+", "def [a-zA-Z0-9]*\([[a-zA-Z0-9]*\):"]
+    regexes_context = ["test", "str;|int;|arg;(1*;)", ";num", "def ;id(;id):"]
     for regex_context, regex_regular in zip(regexes_context, regexes_regular):
         for benchmark_name in os.listdir("benchmarks"):
             with open(os.path.join("benchmarks", benchmark_name)) as f:
@@ -46,6 +46,9 @@ if __name__ == '__main__':
                                              lambda: replace_regex_regular(regex_context, codelines, "dummy"))
                 t_replace_context = timereps(itercount,
                                              lambda: replace_regex_context(regex_context, codelines, "dummy"))
-                print("benchmark: {}, regexes: {}, {}".format(benchmark_name, regex_regular, regex_context))
+                print("benchmark: {}, regexes: {}, {}, matches: {}, {}".format(benchmark_name, regex_regular,
+                                                                               regex_context,
+                                                                               len(match_regex_regular(regex_regular, codelines)),
+                                                                               len(match_regex_context(regex_regular, codelines))))
                 print("match regular:{} match context: {} replace regular:{} replace context: {}".format(
                       t_regular, t_context, t_replace_regular, t_replace_context))
