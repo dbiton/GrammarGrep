@@ -3,9 +3,7 @@ import re
 import GrammarGrep
 from GrammarAutomata import GrammarAutomata
 import seaborn as sns
-import seaborn.objects as so
 import pandas as pd
-import numpy as np
 import itertools
 
 def match_regex_python(regex: str, codelines: list):
@@ -29,26 +27,21 @@ def timereps(reps, func):
 
 def benchmark_graph_plot(grammar_results, python_results):
     l = len(grammar_results)
-    data = {'benchmarks':range(2 * l), 'grep type': list(itertools.repeat('python', l)) + list(itertools.repeat('grammar', l)), 'time':python_results+grammar_results}
+    data = {'benchmarks': range(2 * l),
+            'grep type': list(itertools.repeat('python', l)) + list(itertools.repeat('grammar', l)),
+            'time': python_results + grammar_results}
     benchmarks = pd.DataFrame(data)
     sns.set()
     g = sns.catplot(data=benchmarks, kind="bar", x="benchmarks", y="time", hue="grep type")
-    # (
-    #     so.Plot(benchmarks, x="benchmarks", y="time", color="grep type")
-    #     .add(so.Bar(), so.Hist(), so.Dodge())
-    # )
 
 
 if __name__ == '__main__':
     regexes_python = ["test", "str|int|arg(1*)"]
     regexes_grep = ["test", "str;|int;|arg;(1*;)"]
-    python_res = [1,2]
-    grammar_res = [0.5, 0.6]
-    benchmark_graph_plot(python_results=python_res, grammar_results=grammar_res)
-    # for regex_python, regex_grep in zip(regexes_python, regexes_grep):
-    #     for benchmark_name in os.listdir("benchmarks"):
-    #         with open(os.path.join("benchmarks", benchmark_name)) as f:
-    #             codelines = "".join(f.readlines())
-    #             t_python = timereps(10, lambda: match_regex_python(regex_python, codelines))
-    #             t_grammar = timereps(10, lambda: match_regex_grammar(regex_grep, codelines))
-    #             print(benchmark_name, regex_python, t_python, regex_grep, t_grammar)
+    for regex_python, regex_grep in zip(regexes_python, regexes_grep):
+        for benchmark_name in os.listdir("benchmarks"):
+            with open(os.path.join("benchmarks", benchmark_name)) as f:
+                codelines = "".join(f.readlines())
+                t_python = timereps(10, lambda: match_regex_python(regex_python, codelines))
+                t_grammar = timereps(10, lambda: match_regex_grammar(regex_grep, codelines))
+                print(benchmark_name, regex_python, t_python, regex_grep, t_grammar)
