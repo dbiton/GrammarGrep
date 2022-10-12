@@ -5,6 +5,7 @@ from GrammarAutomata import GrammarAutomata
 import seaborn as sns
 import pandas as pd
 import itertools
+import matplotlib.pyplot as plt
 
 def match_regex_python(regex: str, codelines: list):
     return [m.span() for m in re.finditer(regex, codelines)]
@@ -27,15 +28,18 @@ def timereps(reps, func):
 
 def benchmark_graph_plot(grammar_results, python_results):
     l = len(grammar_results)
-    data = {'benchmarks':range(2 * l), 'grep type': list(itertools.repeat('python', l)) + list(itertools.repeat('grammar', l)), 'time':python_results+grammar_results}
+    data = {'benchmarks' : list(range(l)) + list(range(l)), 'grep type': list(itertools.repeat('python', l)) + list(itertools.repeat('grammar', l)), 'time':python_results+grammar_results}
     benchmarks = pd.DataFrame(data)
     sns.set()
     g = sns.catplot(data=benchmarks, kind="bar", x="benchmarks", y="time", hue="grep type")
+    plt.show()
 
 
 if __name__ == '__main__':
     regexes_python = ["test", "str|int|arg(1*)"]
     regexes_grep = ["test", "str;|int;|arg;(1*;)"]
+    #python_res = []
+    #grammar_res = []
     #benchmark_graph_plot(python_results=python_res, grammar_results=grammar_res)
     for regex_python, regex_grep in zip(regexes_python, regexes_grep):
         for benchmark_name in os.listdir("benchmarks"):
